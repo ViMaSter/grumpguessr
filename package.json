@@ -1,0 +1,20 @@
+{
+  "name": "grumpguessr",
+  "version": "1.0.0",
+  "main": "index.js",
+  "engines": {
+    "node": "20.13.1",
+    "npm": "10.5.2"
+  },
+  "scripts": {
+    "build": "node tools/fetch.js",
+    "start": "node index.js",
+    "test": "test"
+  },
+  "author": "Vincent Mahnke (vincent@mahn.ke)",
+  "license": "GPL-3.0-only",
+  "dependencies": {
+    "express": "4.19.2"
+  },
+  "type": "module"
+}

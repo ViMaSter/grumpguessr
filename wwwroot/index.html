@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <!-- preload videos.json -->
+    <link rel="preload" href="videos.json" as="fetch" crossorigin="anonymous">
+    <script>
+        const get_bigrams = (string) => {
+            const s = string.toLowerCase();
+            const v = new Array(s.length - 1);
+            for (let i = 0; i < v.length; i++)
+            {
+                v[i] = s.slice(i, i + 2);
+            }
+            return v;
+        };
+
+        const string_similarity = (str1, str2) => {
+            if (str1.length > 0 && str2.length > 0)
+            {
+                const pairs1 = get_bigrams(str1);
+                const pairs2 = get_bigrams(str2);
+                const union = pairs1.length + pairs2.length;
+                let hit_count = 0;
+                for (const x of pairs1)
+                {
+                    for (const y of pairs2)
+                    {
+                        if (x === y)
+                        {
+                            hit_count++;
+                        }
+                    }
+                }
+                if (hit_count > 0)
+                {
+                    return ((2.0 * hit_count) / union);
+                }
+            }
+            return 0.0;
+        };
+    </script>
+    <script>
+        window.unguessable = [];
+        let currentIndex = -1;
+        const nextGame = () => {
+            // get random index from videos
+            const randomIndex = Math.floor(Math.random() * window.videosLength);
+            currentIndex = randomIndex;
+            // fetch key
+            const [id, title] = window.videos[randomIndex];
+            // select number between 0 and 2 inclusive
+            const random = Math.floor(Math.random() * 3) + 1;
+            const url = `https://img.youtube.com/vi/${id}/maxres${random}.jpg`;
+            // set window backgroundimage
+            document.querySelector('.image').style.backgroundImage = `url(${url})`;
+
+
+        };
+        const showNextImage = () => {
+            // rotate random part of video by +1 or setting to 1 if 4
+            const current = document.querySelector('.image').style.backgroundImage;
+            const currentRandom = current.match(/maxres(\d)/)[1];
+            const nextRandom = currentRandom === '3' ? '1' : (parseInt(currentRandom) + 1).toString();
+            const nextUrl = current.replace(/maxres\d/, `maxres${nextRandom}`);
+            document.querySelector('.image').style.backgroundImage = nextUrl;
+        };
+        (async () => {
+            const videoRaw = await fetch('videos.json');
+            window.videos = await videoRaw.json();
+            const blockList = ["compilation", "best of"];
+            window.videos = window.videos.filter(([id, title]) => !blockList.some(blocked => title.toLowerCase().includes(blocked)));
+            // remove "Game Grumps" from beginning or end of title
+            const removed = ["Game Grumps", "GameGrumps VS", "Steam Train"];
+            window.videos = window.videos.map(([id, title]) => {
+                removed.forEach(remove => {
+                    title = title.replace(new RegExp(`^${remove} | ${remove}$`, 'i'), '');
+                });
+                title = title.replace(/^[^a-zA-Z0-9\]\)]+/, '').replace(/[^a-zA-Z0-9\]\)]+$/, '');
+                return [id, title];
+            });
+            window.videosLength = videos.length;
+            // create datalist
+            const datalist = document.createElement('datalist');
+            datalist.id = 'videos';
+            videos.forEach(([id, title]) => {
+                const option = document.createElement('option');
+                option.value = title;
+                datalist.appendChild(option);
+            });
+            document.body.appendChild(datalist);
+            nextGame();
+        })();
+        const guessVideo = (value) => {
+            const index = window.videos.findIndex(([id, title]) => title === value);
+            const exactMatch = index === currentIndex;
+            if (exactMatch)
+            {
+                alert('Correct');
+                nextGame();
+
+                document.querySelector('input').value = '';
+                event.preventDefault();
+                return false;
+            }
+            const correctTitle = window.videos[currentIndex][1];
+            const correctTitleWithoutNumbers = correctTitle.replace(/\d+/g, '').trim();
+            const guessedTitle = value;
+            const guessedTitleWithoutNumbers = guessedTitle.replace(/\d+/g, '').trim();
+            
+            const similarity = string_similarity(correctTitleWithoutNumbers, guessedTitleWithoutNumbers);
+            if (similarity >= 0.5)
+            {
+                alert('Correct franchise');
+            }
+            else {
+                alert('Wrong');
+            }
+
+            console.log({ similarity, correctTitle, guessedTitle });
+
+            const [id, title] = window.videos[currentIndex];
+            const numbers = title.match(/\d+/g);
+            if (numbers)
+            {
+                alert("Hint, numbers in title: " + numbers.join(', '));
+            } else 
+            {
+                alert("No numbers in title");
+            }
+            showNextImage();
+        };
+        const markUnguessable = () => {
+            window.unguessable.push(window.videos[currentIndex]);
+            nextGame();
+        };
+    </script>
+</head>
+<body>
+    <div class="window">
+        <div class="image"></div>
+    </div>
+    <form action="" class="textContainer" onsubmit="guessVideo(this.querySelector('input').value)">
+        <input type="search" list="videos" placeholder="Search for a video">
+        <a href="#" onclick="markUnguessable()">mark unguessable</a>
+    </form>
+    <script></script>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000;
+            flex-direction: column;
+        }
+        .window {
+            flex: 1;
+            display: flex;
+            align-content: center;
+            flex-wrap: wrap;
+            flex-direction: row;
+        }
+        .textContainer {
+            flex: 0.25;
+            display: flex;
+            flex-direction: column;
+            flex-wrap: nowrap;
+            align-content: center;
+            justify-content: center;
+            width: 75vw;
+        }
+        @media (max-width: 600px) {
+            .textContainer {
+                width: 100vw;
+            }
+        }
+        input
+        {
+            width: 100%;
+            font-size: 3em;
+        }
+        .image {
+            /* 30vw width and 16:9 */
+            width: 30vw;
+            height: auto;
+            aspect-ratio: 16 / 9;
+            background-size: cover;
+            background-position: center;
+        }
+        @media (max-width: 600px) {
+            .image {
+                width: 100vw;
+            }
+        }
+    </style>
+</body>
+</html>
