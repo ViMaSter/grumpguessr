@@ -65,7 +65,7 @@
         (async () => {
             let videos = Object.entries(await (await fetch('videos.json')).json());
             const blockList = ["compilation", "best of"];
-            const removed = ["Game Grumps", "GameGrumps VS", "Steam Train"];
+            const removed = ["GameGrumps VS", "Game Grumps VS", "Game Grumps", "GameGrump", "Steam Train"];
             videos = videos.filter(([id, title]) => {
                 return !blockList.some(block => title.toLowerCase().includes(block));
             }).map(([id, title]) => {
