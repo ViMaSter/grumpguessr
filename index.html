@@ -43,30 +43,40 @@
         };
     </script>
     <script>
-        window.unguessable = [];
         let currentIndex = -1;
         const nextGame = () => {
+            guessesLeft = guessCount;
             const randomIndex = Math.floor(Math.random() * window.videosLength);
             currentIndex = randomIndex;
             const [id, title] = Object.entries(window.videos)[randomIndex];
             const random = Math.floor(Math.random() * 3) + 1;
             const url = `https://img.youtube.com/vi/${id}/maxres${random}.jpg`;
             document.querySelector('.image').style.backgroundImage = `url(${url})`;
-
-
         };
+        const guessCount = 3;
+        let guessesLeft = guessCount;
         const showNextImage = () => {
-            // rotate random part of video by +1 or setting to 1 if 4
+            debugger;
+            if (guessesLeft === 1)
+            {
+                return false;
+            }
+            --guessesLeft;
+
             const current = document.querySelector('.image').style.backgroundImage;
             const currentRandom = current.match(/maxres(\d)/)[1];
-            const nextRandom = currentRandom === '3' ? '1' : (parseInt(currentRandom) + 1).toString();
+            let nextRandom = (parseInt(currentRandom) + 1).toString();
+            if (nextRandom === '4') {
+                nextRandom = '1';
+            }
             const nextUrl = current.replace(/maxres\d/, `maxres${nextRandom}`);
             document.querySelector('.image').style.backgroundImage = nextUrl;
+            return true;
         };
         (async () => {
             let videos = Object.entries(await (await fetch('videos.json')).json());
             const blockList = ["compilation", "best of"];
-            const removed = ["Game Grumps", "GameGrumps VS", "Steam Train"];
+            const removed = ["GameGrumps VS", "Game Grumps VS", "Game Grumps", "GameGrump", "Steam Train"];
             videos = videos.filter(([id, title]) => {
                 return !blockList.some(block => title.toLowerCase().includes(block));
             }).map(([id, title]) => {
@@ -117,6 +127,17 @@
 
             console.log({ similarity, correctTitle, guessedTitle });
 
+            const hasNextImage = showNextImage();
+            if (!hasNextImage)
+            {
+                nextGame();
+                alert('No guesses left. Correct answer: ' + correctTitle);
+
+                document.querySelector('input').value = '';
+                event.preventDefault();
+                return false;
+            }
+
             const [id, title] = Object.entries(window.videos)[currentIndex];
             const numbers = title.match(/\d+/g);
             if (numbers)
@@ -126,10 +147,19 @@
             {
                 alert("No numbers in title");
             }
-            showNextImage();
+
+            document.querySelector('input').value = '';
+            event.preventDefault();
+            return false;
         };
         const markUnguessable = () => {
-            window.unguessable.push(window.videos[currentIndex]);
+            let current = JSON.parse(localStorage.getItem('unguessable'));
+            if (!current)
+            {
+                current = [];
+            }
+            current.push(Object.entries(window.videos)[currentIndex][0]);
+            localStorage.setItem('unguessable', JSON.stringify(current));
             nextGame();
         };
     </script>
