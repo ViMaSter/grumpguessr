@@ -1,0 +1,64 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  deployment:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          path: src
+
+      - name: Use Node.js LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "src/package.json"
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: src
+
+      - name: Build
+        run: npm run build
+        working-directory: src
+        env:
+          YOUTUBE_DATAAPI_KEY: ${{ secrets.YOUTUBE_DATAAPI_KEY }}
+
+      - name: Prepare distributed files
+        run: |
+          mkdir dist
+          cp -r src/wwwroot/* dist
+
+          cd src
+          git fetch origin gh-pages
+          git checkout gh-pages
+          # including .github
+          rm -rf *
+          rm -rf .gitignore
+          rm -rf .github
+
+          cp -r ../dist/* .
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "noreply@mahn.ke"
+
+      - name: Place version endpoint
+        run: |
+          mkdir -p src/api
+          echo ${{ github.sha }} > src/api/version
+
+      - name: Deploy
+        run: |
+          cd src
+          git add .
+          git commit -m "Deploy"
+          git push origin gh-pages
