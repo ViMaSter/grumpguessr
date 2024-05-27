@@ -43,7 +43,6 @@
         };
     </script>
     <script>
-        window.unguessable = [];
         let currentIndex = -1;
         const nextGame = () => {
             const randomIndex = Math.floor(Math.random() * window.videosLength);
@@ -129,7 +128,13 @@
             showNextImage();
         };
         const markUnguessable = () => {
-            window.unguessable.push(window.videos[currentIndex]);
+            let current = JSON.parse(localStorage.getItem('unguessable'));
+            if (!current)
+            {
+                current = [];
+            }
+            current.push(Object.entries(window.videos)[currentIndex][0]);
+            localStorage.setItem('unguessable', JSON.stringify(current));
             nextGame();
         };
     </script>
