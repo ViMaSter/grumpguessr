@@ -46,15 +46,11 @@
         window.unguessable = [];
         let currentIndex = -1;
         const nextGame = () => {
-            // get random index from videos
             const randomIndex = Math.floor(Math.random() * window.videosLength);
             currentIndex = randomIndex;
-            // fetch key
-            const [id, title] = window.videos[randomIndex];
-            // select number between 0 and 2 inclusive
+            const [id, title] = Object.entries(window.videos)[randomIndex];
             const random = Math.floor(Math.random() * 3) + 1;
             const url = `https://img.youtube.com/vi/${id}/maxres${random}.jpg`;
-            // set window backgroundimage
             document.querySelector('.image').style.backgroundImage = `url(${url})`;
 
 
@@ -68,19 +64,19 @@
             document.querySelector('.image').style.backgroundImage = nextUrl;
         };
         (async () => {
-            const videoRaw = await fetch('videos.json');
-            window.videos = await videoRaw.json();
+            let videos = Object.entries(await (await fetch('videos.json')).json());
             const blockList = ["compilation", "best of"];
-            window.videos = window.videos.filter(([id, title]) => !blockList.some(blocked => title.toLowerCase().includes(blocked)));
-            // remove "Game Grumps" from beginning or end of title
             const removed = ["Game Grumps", "GameGrumps VS", "Steam Train"];
-            window.videos = window.videos.map(([id, title]) => {
+            videos = videos.filter(([id, title]) => {
+                return !blockList.some(block => title.toLowerCase().includes(block));
+            }).map(([id, title]) => {
                 removed.forEach(remove => {
                     title = title.replace(new RegExp(`^${remove} | ${remove}$`, 'i'), '');
                 });
                 title = title.replace(/^[^a-zA-Z0-9\]\)]+/, '').replace(/[^a-zA-Z0-9\]\)]+$/, '');
                 return [id, title];
             });
+            window.videos = Object.fromEntries(videos);
             window.videosLength = videos.length;
             // create datalist
             const datalist = document.createElement('datalist');
@@ -94,7 +90,7 @@
             nextGame();
         })();
         const guessVideo = (value) => {
-            const index = window.videos.findIndex(([id, title]) => title === value);
+            const index = Object.entries(window.videos).findIndex(([id, title]) => title === value);
             const exactMatch = index === currentIndex;
             if (exactMatch)
             {
@@ -105,7 +101,7 @@
                 event.preventDefault();
                 return false;
             }
-            const correctTitle = window.videos[currentIndex][1];
+            const correctTitle = Object.entries(window.videos)[currentIndex][1];
             const correctTitleWithoutNumbers = correctTitle.replace(/\d+/g, '').trim();
             const guessedTitle = value;
             const guessedTitleWithoutNumbers = guessedTitle.replace(/\d+/g, '').trim();
@@ -121,7 +117,7 @@
 
             console.log({ similarity, correctTitle, guessedTitle });
 
-            const [id, title] = window.videos[currentIndex];
+            const [id, title] = Object.entries(window.videos)[currentIndex];
             const numbers = title.match(/\d+/g);
             if (numbers)
             {
